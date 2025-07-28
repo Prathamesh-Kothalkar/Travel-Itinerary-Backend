@@ -10,7 +10,7 @@ import (
 )
 
 func GenerateItinerary(c *gin.Context) {
-    var req models.ItineraryRequest
+    var req models.ItineraryData
 	fmt.Println("Received request to generate itinerary",req)
     if err := c.ShouldBindJSON(&req); err != nil {
         c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -20,8 +20,9 @@ func GenerateItinerary(c *gin.Context) {
     filename := "itinerary_" + time.Now().Format("20060102150405") + ".pdf"
     filepath := "storage/pdf/" + filename
 
-    err := utils.GeneratePDF(req, filepath)
+    err := utils.GenerateStyledPDF(req, filepath)
     if err != nil {
+        fmt.Println("Error generating PDF:", err)
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate PDF"})
         return
     }
