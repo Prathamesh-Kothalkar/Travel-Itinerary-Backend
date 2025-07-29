@@ -10,9 +10,6 @@ func SetupRouter() *gin.Engine {
     api := r.Group("/api/v1")
     {
         api.POST("/itinerary", handlers.GenerateItinerary)
-		api.GET("/itinerary", func(c *gin.Context) { 
-			c.JSON(200, gin.H{"message": "Itinerary endpoint is working"})
-		})
     }
     return r
 }

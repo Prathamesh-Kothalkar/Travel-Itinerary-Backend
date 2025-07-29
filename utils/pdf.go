@@ -8,71 +8,96 @@ import (
 )
 
 func GenerateStyledPDF(data models.ItineraryData, filepath string) error {
+
 	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf.SetMargins(15, 20, 15)
 	pdf.AddPage()
 
-	// --- HEADER: Logo + Banner ---
-	logoPath := "public/images/logo.png" // Place logo in assets folder
-	pdf.ImageOptions(logoPath, 80, 10, 50, 20, false, gofpdf.ImageOptions{}, 0, "")
-	pdf.Ln(25)
+	// --- LOGO + Banner ---
+	pdf.ImageOptions("public/images/logo.png", 80, 10, 50, 20, false, gofpdf.ImageOptions{}, 0, "")
+	pdf.Ln(30)
 
-	// Banner background
-	pdf.SetFillColor(147, 111, 224) // Purple banner
-	pdf.Rect(10, 35, 190, 25, "F")
+	pdf.SetFillColor(147, 111, 224)
+	pdf.Rect(10, 35, 190, 20, "F")
 	pdf.SetTextColor(255, 255, 255)
 	pdf.SetFont("Arial", "B", 16)
 	pdf.SetXY(10, 40)
-	pdf.CellFormat(190, 10, fmt.Sprintf("Hi %s! Your %s Itinerary",
-		data.TripDetails.TravelerName, data.TripDetails.DestinationCity), "", 1, "C", false, 0, "")
+	pdf.CellFormat(190, 10, fmt.Sprintf("Hi %s! Your %s Itinerary", data.TripDetails.TravelerName, data.TripDetails.DestinationCity), "", 1, "C", false, 0, "")
 	pdf.Ln(10)
 
-     // TRIP SUMMARY BAR
-    pdf.SetY(70)
-    pdf.SetFillColor(255, 255, 255)
-    pdf.SetDrawColor(138, 43, 226)
-    pdf.SetLineWidth(0.5)
-    pdf.Rect(15, pdf.GetY(), 180, 25, "D")
-    pdf.SetFont("Helvetica", "B", 12)
-    pdf.SetTextColor(0, 0, 0)
-    pdf.SetXY(20, pdf.GetY()+5)
-    pdf.CellFormat(40, 8, "Departure From", "", 0, "L", false, 0, "")
-    pdf.CellFormat(40, 8, "Departure Date", "", 0, "L", false, 0, "")
-    pdf.CellFormat(40, 8, "Arrival Date", "", 0, "L", false, 0, "")
-    pdf.CellFormat(40, 8, "Travellers", "", 1, "L", false, 0, "")
-
-    pdf.SetFont("Helvetica", "", 12)
-    pdf.SetX(20)
-    pdf.CellFormat(40, 8, data.TripDetails.DepartureCity, "", 0, "L", false, 0, "")
-    pdf.CellFormat(40, 8, formatDate(data.TripDetails.DepartureDate), "", 0, "L", false, 0, "")
-    pdf.CellFormat(40, 8, formatDate(data.TripDetails.ArrivalDate), "", 0, "L", false, 0, "")
-
-	// --- Trip Summary Bar ---
-	pdf.SetFillColor(255, 255, 255)
-	pdf.SetTextColor(0, 0, 0)
-	pdf.SetFont("Arial", "", 11)
+	// --- Trip Summary Card ---
+	pdf.SetFillColor(240, 240, 250)
 	pdf.SetDrawColor(138, 43, 226)
-	pdf.Rect(10, 65, 190, 20, "D")
+	pdf.Rect(15, pdf.GetY(), 180, 28, "D")
+	pdf.SetFont("Helvetica", "B", 11)
+	pdf.SetTextColor(80, 0, 130)
+	pdf.SetXY(20, pdf.GetY()+5)
+	pdf.CellFormat(45, 8, "Departure From", "", 0, "L", false, 0, "")
+	pdf.CellFormat(45, 8, "Departure Date", "", 0, "L", false, 0, "")
+	pdf.CellFormat(45, 8, "Arrival Date", "", 0, "L", false, 0, "")
+	pdf.CellFormat(45, 8, "Travellers", "", 1, "L", false, 0, "")
 
-	pdf.SetXY(15, 70)
-	pdf.Cell(50, 5, fmt.Sprintf("Departure From: %s", data.TripDetails.DepartureCity))
-	pdf.SetXY(80, 70)
-	pdf.Cell(50, 5, fmt.Sprintf("Departure: %s", data.TripDetails.DepartureDate))
-	pdf.SetXY(150, 70)
-	pdf.Cell(50, 5, fmt.Sprintf("Travelers: %s", data.TripDetails.NumberOfTravelers))
-	pdf.Ln(25)
+	pdf.SetFont("Helvetica", "", 11)
+	pdf.SetTextColor(0, 0, 0)
+	pdf.SetX(20)
+	pdf.CellFormat(45, 8, data.TripDetails.DepartureCity, "", 0, "L", false, 0, "")
+	pdf.CellFormat(45, 8, formatDate(data.TripDetails.DepartureDate), "", 0, "L", false, 0, "")
+	pdf.CellFormat(45, 8, formatDate(data.TripDetails.ArrivalDate), "", 0, "L", false, 0, "")
+	pdf.CellFormat(45, 8, data.TripDetails.NumberOfTravelers, "", 1, "L", false, 0, "")
+	pdf.Ln(10)
 
-	// --- Accommodations Table ---
+	// --- Daily Itinerary ---
+if len(data.DailyItineraries) > 0 {
+	pdf.SetFillColor(91, 44, 111)
+	pdf.SetTextColor(255, 255, 255)
+	pdf.SetFont("Arial", "B", 14)
+	pdf.CellFormat(190, 10, "Daily Itinerary", "1", 1, "C", true, 0, "")
+
+	for _, day := range data.DailyItineraries {
+		pdf.SetFont("Arial", "B", 12)
+		pdf.SetTextColor(91, 44, 111)
+		pdf.Cell(0, 8, fmt.Sprintf("%s - %s", day.DayTitle, formatDate(day.Date)))
+		pdf.Ln(6)
+
+		pdf.SetFont("Arial", "", 11)
+		pdf.SetTextColor(0, 0, 0)
+
+		if day.MorningActivities != "" {
+			pdf.Cell(0, 6, "Morning:")
+			pdf.Ln(5)
+			pdf.MultiCell(0, 5, fmt.Sprintf("• %s", day.MorningActivities), "", "", false)
+		}
+
+		if day.AfternoonActivities != "" {
+			pdf.Cell(0, 6, "Afternoon:")
+			pdf.Ln(5)
+			pdf.MultiCell(0, 5, fmt.Sprintf("• %s", day.AfternoonActivities), "", "", false)
+		}
+
+		if day.EveningActivities != "" {
+			pdf.Cell(0, 6, "Evening:")
+			pdf.Ln(5)
+			pdf.MultiCell(0, 5, fmt.Sprintf("• %s", day.EveningActivities), "", "", false)
+		}
+
+		pdf.Ln(5)
+	}
+}
+
+
+
+	// --- Accommodation Section ---
 	if len(data.Accommodations) > 0 {
 		addTableSection(pdf, "Hotel Bookings", []string{"City", "Hotel", "Check-In", "Check-Out", "Nights"})
 		for _, acc := range data.Accommodations {
 			addTableRow(pdf, []string{
-				acc.City, acc.HotelName, acc.CheckInDate, acc.CheckOutDate, fmt.Sprintf("%d", acc.NumberOfNights),
+				acc.City, acc.HotelName, formatDate(acc.CheckInDate), formatDate(acc.CheckOutDate), fmt.Sprintf("%d", acc.NumberOfNights),
 			})
 		}
 		pdf.Ln(10)
 	}
 
-	// --- Activities Table ---
+	// --- Activities Section ---
 	if len(data.Activities) > 0 {
 		addTableSection(pdf, "Activities", []string{"City", "Activity", "Date/Time", "Duration"})
 		for _, act := range data.Activities {
@@ -82,28 +107,32 @@ func GenerateStyledPDF(data models.ItineraryData, filepath string) error {
 		}
 		pdf.Ln(10)
 	}
-    //fligths
-    if len(data.Flights) > 0 {
-        pdf.Ln(15)
-        pdf.SetFont("Helvetica", "B", 14)
-        pdf.SetTextColor(0, 0, 0)
-        pdf.Cell(0, 10, "Flight Summary")
 
-        for _, flight := range data.Flights {
-            pdf.Ln(8)
-            pdf.SetDrawColor(195, 155, 211)
-            pdf.Rect(15, pdf.GetY(), 180, 12, "D")
-            pdf.SetXY(20, pdf.GetY()+3)
-            pdf.SetFont("Helvetica", "", 11)
-            pdf.CellFormat(0, 6, fmt.Sprintf("%s: Fly %s from %s to %s", formatDayMonth(flight.Date), flight.Airline, flight.From, flight.To), "", 0, "L", false, 0, "")
-        }
-    }
+	// --- Flights ---
+	if len(data.Flights) > 0 {
+		pdf.Ln(10)
+		pdf.SetFont("Helvetica", "B", 14)
+		pdf.SetTextColor(91, 44, 111)
+		pdf.Cell(0, 10, "Flight Summary")
+		pdf.Ln(10)
+
+		for _, flight := range data.Flights {
+			pdf.SetDrawColor(195, 155, 211)
+			pdf.Rect(15, pdf.GetY(), 180, 12, "D")
+			pdf.SetXY(20, pdf.GetY()+3)
+			pdf.SetFont("Helvetica", "", 11)
+			pdf.SetTextColor(0, 0, 0)
+			pdf.CellFormat(0, 6, fmt.Sprintf("%s: Fly %s from %s to %s", formatDayMonth(flight.Date), flight.Airline, flight.From, flight.To), "", 0, "L", false, 0, "")
+			pdf.Ln(12)
+		}
+	}
 
 	// --- Visa Details ---
 	pdf.SetFillColor(91, 44, 111)
 	pdf.SetTextColor(255, 255, 255)
 	pdf.SetFont("Arial", "B", 14)
 	pdf.CellFormat(190, 10, "Visa Details", "1", 1, "C", true, 0, "")
+
 	pdf.SetFont("Arial", "", 12)
 	pdf.SetTextColor(0, 0, 0)
 	pdf.Cell(0, 8, fmt.Sprintf("Visa Type: %s", data.VisaDetails.VisaType))
@@ -111,13 +140,14 @@ func GenerateStyledPDF(data models.ItineraryData, filepath string) error {
 	pdf.Cell(0, 8, fmt.Sprintf("Validity Period: %s", data.VisaDetails.ValidityPeriod))
 	pdf.Ln(6)
 	pdf.Cell(0, 8, fmt.Sprintf("Processing Date: %s", data.VisaDetails.ProcessingDate))
-	pdf.Ln(12)
+	pdf.Ln(10)
 
 	// --- Payment Plan ---
 	pdf.SetFillColor(91, 44, 111)
 	pdf.SetTextColor(255, 255, 255)
 	pdf.SetFont("Arial", "B", 14)
 	pdf.CellFormat(190, 10, "Payment Plan", "1", 1, "C", true, 0, "")
+
 	pdf.SetFont("Arial", "", 12)
 	pdf.SetTextColor(0, 0, 0)
 	pdf.Cell(0, 8, fmt.Sprintf("Total Amount: ₹%s", data.PaymentPlan.TotalAmount))
@@ -150,6 +180,7 @@ func GenerateStyledPDF(data models.ItineraryData, filepath string) error {
 
 	return pdf.OutputFileAndClose(filepath)
 }
+
 
 // --- Helper to add table header ---
 func addTableSection(pdf *gofpdf.Fpdf, title string, headers []string) {
